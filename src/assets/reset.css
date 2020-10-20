@@ -1,0 +1,39 @@
+.login-page .el-input{
+  width:83% !important;
+}
+.login-page .el-input__inner{
+    
+    background:none;
+    color:#fff;
+}
+.login-page .el-form-item__label{
+    color:#fff;
+  }
+.login-page  .el_from{
+    position: absolute;
+    top:0;
+    left:-10px;
+    }
+.login-page .el-submenu__title{
+    color: rgb(78, 91, 248);
+  }
+ .home .row-bg{
+        background: none;
+      }
+.home .bg-purple-light{
+    background: none;
+}
+.home .bg-purple{
+    background: none;
+}
+
+.home .grid-content{
+    min-height: 60px;
+  }
+
+.home .el-header{
+    color:#fff;
+  }
+.home .el-main{
+    background: #fff;;
+  }
