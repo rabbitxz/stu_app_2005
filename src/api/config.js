@@ -20,13 +20,20 @@ axios.interceptors.request.use(config=>{
         return config
     }
 })
+//响应拦截器
 axios.interceptors.response.use(config=>{
     //当localstroage里面的数据和请求服务时的token不对应时说明token失效
     if(config.data.code==="1004" || config.data.code==="10022"){
+        
         //当前后台中1004代表校验失败，10022代表检验失败，提示错误，并跳转到登录页面
         ElementUI.Message.error("登录过期，请重新登录")
+        localStorage.removeItem("qf-2005")
+       
         //跳转到登录页面
         router.push("/login")
+         //刷新页面
+         window.location.reload()
+        
     }
     return config
 })

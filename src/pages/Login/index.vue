@@ -26,7 +26,16 @@
             autocomplete="off"
           ></el-input>
         </el-form-item>
-
+        <!-- 验证码 -->
+<el-form-item label="验证码" prop="captcha"  @keydown.enter.native="submitForm('loginForm')">
+          <el-input
+            type="text"
+            v-model="loginForm.captcha"
+            class="captcha"
+            autocomplete="off"
+          ></el-input>
+          <span class="captcha-svg" v-html="captchasvg" @click="rersh"></span>
+        </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="submitForm('loginForm')"
             >提交</el-button
@@ -97,9 +106,15 @@
   opacity: 0.7;
   background-position: 60% 65%;
 }
+.captcha-svg{
+  background-color: #fff;
+  display: inline-block;
+  height: 44px;
+ 
+}
 </style>
 <script>
-import { login } from "@/api";
+import { login,getCaptcha,verifyCaptcha } from "@/api";
 import {mapMutations} from "vuex"
 export default {
   /**
@@ -118,9 +133,18 @@ export default {
         callback();
       }
     };
-    var validatepass = (rule, value, callback) => {
+    // 密码验证
+    var validatepassword = (rule, value, callback) => {
       if (value === "") {
         callback(new Error("请输入密码"));
+      } else {
+        callback();
+      }
+    };
+    // 校验 验证码
+    var validatecaptcha = (rule, value, callback) => {
+      if (value === "" || value.length!==5) {
+        callback(new Error("请输入验证码"));
       } else {
         callback();
       }
@@ -129,19 +153,41 @@ export default {
       loginForm: {
         username: "",
         password: "",
-        age: ""
+        captcha:"",
       },
+      captchasvg:"",
       rules: {
         username: [{ validator: validateusername, trigger: "blur" }],
-        password: [{ validator: validatepass, trigger: "blur" }]
+        password: [{ validator: validatepassword, trigger: "blur" }],
+        captcha: [{ validator: validatecaptcha, trigger: "blur" }]
       }
     };
   },
   methods: {
+    //点击验证码图片刷新验证码
+    rersh(){
+      this.SET_CAPTCHA()
+    },
+    //封装刷新获取验证码
+    SET_CAPTCHA(){
+      getCaptcha()
+      .then(res=>{
+        this.captchasvg=res.data.img
+      })
+    },
     ...mapMutations(['SET_USERINFO']),
     submitForm(formName) {
-      this.$refs[formName].validate(valid => {
+      this.$refs[formName].validate(async valid => {//因为要先判断验证码所以异步
         if (valid) {
+          
+          let res=await verifyCaptcha(this.loginForm.captcha)
+          if(!res.data.state){
+            //验证码不正确，提示并终止执行进入页面
+            this.$message.error("验证码不正确");
+              return
+          }
+          
+          // 点击登录出现loding页面
           const loading = this.$loading({
             lock: true,
             text: "Loading",
@@ -152,12 +198,13 @@ export default {
           //获取用户名和密码发送到服务器，并创建token到本地
           let { username, password } = this.loginForm;
           login(username, password).then(res => {
+            //关闭loging页面--发送登录请求时关闭
             loading.close();
             if (res.data.state) {
-              console.log(res)
               // 创建token到本地,将userInfo也存储到本地中（为了显示其用户昵称等信息）
               localStorage.setItem("qf-2005", res.data.token);
               localStorage.setItem("qf-userInfo", JSON.stringify(res.data.userInfo));
+              localStorage.setItem("qf-permission-buttons", JSON.stringify(res.data.permission.buttons));
               //更改vuex中state中userInfo的值
               this.SET_USERINFO(res.data.userInfo)
               this.$router.push("/");
@@ -175,10 +222,15 @@ export default {
         }
       });
     },
+    // 组建中的方法
     resetForm(formName) {
       this.$refs[formName].resetFields();
     }
-  }
+  },
+  // 调用验证码方法
+  mounted () {
+      this.SET_CAPTCHA()
+    },
 };
 </script>
 
